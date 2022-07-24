@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:graphql_test/graph_ql/graphqul_config.dart';
 import 'package:graphql_test/graph_ql/query_mutation.dart';
+import 'package:graphql_test/models/user_model.dart';
 
 class CreatePage extends StatefulWidget {
-  const CreatePage({Key? key}) : super(key: key);
+  final User? user;
+  const CreatePage({Key? key,this.user}) : super(key: key);
 
   @override
   State<CreatePage> createState() => _CreatePageState();
@@ -30,7 +32,37 @@ class _CreatePageState extends State<CreatePage> {
       txtTwitter.clear();
       Navigator.of(context).pop();
     } else {
-      print(result.exception);
+      print("${result.exception}safty");
+    }
+  }
+
+  _updateUser(String name,String rocket,String twitter, String id)async{
+    QueryMutation queryMutation = QueryMutation();
+    print(queryMutation.updateUser(name, rocket, twitter,widget.user!.id));
+    GraphQLClient _clinet = graphQLConfiguration.clientToQuery();
+
+    QueryResult result = await _clinet.mutate(MutationOptions(document: gql(queryMutation.updateUser(name, rocket, twitter, id))));
+
+    if (!result.hasException) {
+      txtName.clear();
+      txtRocket.clear();
+      txtTwitter.clear();
+      Navigator.of(context).pop();
+    } else {
+      print("${result.exception}safty");
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if(widget.user != null){
+      setState((){
+        txtName.text = widget.user!.name;
+        txtRocket.text = widget.user!.rocket;
+        txtTwitter.text = widget.user!.twitter;
+      });
     }
   }
 
@@ -92,10 +124,17 @@ class _CreatePageState extends State<CreatePage> {
         MaterialButton(
           child: const Text("Insert"),
           onPressed: () async {
-            var name = txtName.text.toString().trim();
-            var rocket = txtRocket.text.toString().trim();
-            var twitter = txtTwitter.text.toString().trim();
-            _insertNewUser(name, rocket, twitter);
+            if(widget.user == null){
+              var name = txtName.text.toString().trim();
+              var rocket = txtRocket.text.toString().trim();
+              var twitter = txtTwitter.text.toString().trim();
+              _insertNewUser(name, rocket, twitter);
+            }else{
+              var name = txtName.text.toString().trim();
+              var rocket = txtRocket.text.toString().trim();
+              var twitter = txtTwitter.text.toString().trim();
+              _updateUser(name, rocket, twitter,widget.user!.id);
+            }
           },
         )
       ],

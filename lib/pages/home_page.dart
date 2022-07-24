@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:graphql_test/graph_ql/graphqul_config.dart';
 import 'package:graphql_test/graph_ql/query_mutation.dart';
@@ -12,9 +13,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+class _HomePageState extends State<HomePage> {
   GraphQLConfiguration graphQLConfiguration = GraphQLConfiguration();
   List<User> users = [];
+  bool isLoading = false;
 
   void apiUserList() async {
     QueryMutation queryMutation = QueryMutation();
@@ -41,7 +43,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
       print(users.length.toString());
     } else {
-      print("Error");
+      print("Error nima uchun");
     }
   }
 
@@ -57,12 +59,47 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
+  _updateUser(context,User user) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          CreatePage createPage = CreatePage(user: user,);
+          return createPage;
+        }).whenComplete(() {
+      users.clear();
+      apiUserList();
+    });
+  }
+
+  _deleteUser(String id) async {
+    setState(() {
+      isLoading = true;
+    });
+    QueryMutation queryMutation = QueryMutation();
+    GraphQLClient _clinet = graphQLConfiguration.clientToQuery();
+
+    QueryResult result = await _clinet
+        .mutate(MutationOptions(document: gql(queryMutation.deleteUser(id))));
+    if (!result.hasException) {
+      debugPrint("Success");
+      users.clear();
+      apiUserList();
+      setState(() {
+        isLoading = false;
+      });
+    } else {
+      debugPrint("Error");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     apiUserList();
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -80,24 +117,62 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           )
         ],
       ),
-      body: ListView.builder(
-          itemCount: users.length,
-          itemBuilder: (context, index) {
-            return Card(
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(users[index].name),
-                    Text(users[index].rocket),
-                    Text(users[index].twitter)
-                  ],
-                ),
-              ),
-            );
-          }),
+      body: Stack(
+        children: [
+          ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                return Slidable(
+                  startActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(
+                        onPressed: (BuildContext context) {
+                          _updateUser(context, users[index]);
+                        },
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit,
+                        label: 'Edit',
+                      ),
+                    ],
+                  ),
+                  endActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(
+                        onPressed: (BuildContext context) {
+                          _deleteUser(users[index].id);
+                        },
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete,
+                        label: 'Delete',
+                      ),
+                    ],
+                  ),
+                  child: Card(
+                    child: Container(
+                      width: MediaQuery.of(context).size.width,
+                      color: Colors.white,
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(users[index].name),
+                          Text(users[index].rocket),
+                          Text(users[index].twitter)
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+          isLoading
+              ? const LinearProgressIndicator(color: Colors.red,)
+              : const SizedBox.shrink(),
+        ],
+      ),
     );
   }
 }

@@ -21,4 +21,29 @@ class QueryMutation{
       }
     """;
   }
+
+  String deleteUser(String id) {
+    return """
+      mutation {
+        delete_users(where: {id: {_eq: "$id"}}) {
+          affected_rows
+        }
+      }
+    """;
+  }
+
+  String updateUser(String name,String rocket,String twitter,String id) {
+    return """
+      mutation {
+        update_users(_set: {
+          "name": "$name",
+          "rocket": "$rocket",
+          "twitter": "$twitter" 
+        }
+        where: {id: {_eq: "$id"}}) {
+          affected_rows
+        }
+      }
+    """;
+  }
 }
