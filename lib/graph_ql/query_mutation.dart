@@ -36,9 +36,9 @@ class QueryMutation{
     return """
       mutation {
         update_users(_set: {
-          "name": "$name",
-          "rocket": "$rocket",
-          "twitter": "$twitter" 
+          name: "$name",
+          rocket: "$rocket",
+          twitter: "$twitter" 
         }
         where: {id: {_eq: "$id"}}) {
           affected_rows
